@@ -49,8 +49,22 @@
 ;; ...Or *all* packages (NOT RECOMMENDED; will likely break things)
 ;; (unpin! t)
 (package! catppuccin-theme)
+(package! gruvbox-theme)
 (package! org-timeblock)
 (package! org-caldav)
 (package! org-journal)
 (package! org-ql)
-(package! emacs-w3m)
+
+;;Astro
+;;(when (modulep! +lsp)
+;;  (package! lsp-tailwindcss
+;;    :recipe (:host github :repo "merrickluo/lsp-tailwindcss")))
+;;(package! astro-ts-mode)
+;;(package! treesit-auto)
+
+(package! calfw-blocks
+  :recipe (:host github :repo "haji-ali/calfw-blocks"))
+
+(package! maccalfw
+  :recipe (:host github :repo "haji-ali/maccalfw"
+           :files ("maccalfw.el" "ical-form.el" ("src" . "src"))))

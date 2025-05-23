@@ -34,141 +34,39 @@
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'catppuccin)
 (setq catppuccin-flavor 'mocha)
+;;(setq doom-theme 'gruvbox-dark-soft)
+
+;; For current frame
+(set-frame-parameter nil 'alpha 97)
+;; For all new frames henceforth
+(add-to-list 'default-frame-alist '(alpha . 97))
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
 (setq display-line-numbers-type 'relative)
 
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!j
-(custom-set-variables
- '(org-directory "~/Notes")
- '(org-agenda-files (list org-directory)))
-
-(setq org-directory "~/Notes")
-;; org-roam
-;;(setq org-directory "~/Notes/000_YR3Winter")
-
-(use-package org-roam
-  :ensure t
-  :custom
-  (org-roam-directory (file-truename "~/Notes/"))
-  :config
-  (setq org-roam-dailies-directory "~/Notes/Daily")
-  )
-
-(after! org
-  (setq org-todo-keywords '((sequence "TODO" "IN PROG" "|" "DONE")))
-  (setq org-todo-keyword-faces
-        '(("TODO" . "#eed49f") ("IN PROG" . "#c6a0f6")
-          ("DONE" . (:foreground "#ed8796" :weight bold))))
-  (setq org-log-done 'time))
-
-(setq org-roam-dailies-capture-templates
-      '(("d" "daily" entry
-         "* %<%H:%M> %?"
-         :if-new (file+head "%<%Y-%m-%d>.org"
-                            "#+title: %<%Y %m %d>
-* Today
-** Thoughts\n
-** What I Did\n
-** Media
-- [ ] Read
-- [ ] TV
-- [ ] Movies
-- [ ] Sports
-- [ ] Games")
-         :immediate-finish t
-         :unnarrowed t)
-
-        ("w" "weekly" entry "* %<%H:%M> %?"
-         :if-new (file+head "~/Notes/Weekly/%<%Y-W%W>.org" "#+title: %<%Y Week %W>
-* TO-DO\n
-* Monday\n
-* Tuesday\n
-* Wednesday\n
-* Thursday\n
-* Friday\n
-* Saturday\n
-* Sunday\n
-* Next Week Reminders\n
-")
-         :immediate-finish t
-         :unnarrowed t)))
-
 ;;settings
 (setq-default tab-width 4)
+(setq doom-font (font-spec :family "IosevkaTerm Nerd Font Mono" :size 18))
+;;(setq Man-notify 'quiet)
+(add-to-list 'display-buffer-alist
+             '("\\*Man .*\\*" (display-buffer-same-window)))
+
+;; defuns
+;; Note taking
+(defun my/insert-definition (term)
+  "Insert a new definition heading with ID and alias."
+  (interactive "sTerm: ")
+  (let ((id (org-id-new)))
+    (insert (format "** %s :definition:\n:PROPERTIES:\n:ID: %s\n:ROAM_ALIASES: %s\n:END:\n\n" term id term))))
 
 ;;keymaps
 ;; tab
 ;;(map! :nv "z z" #'+fold/toggle)
 ;; spc /
-(map! :nv "r g" #'consult-ripgrep)
-(map! :nv "SPC o c" #'cfw:open-org-calendar)
-(use-package! calfw
-  :defer t
-  :config
-  (map! :map cfw:calendar-mode-map
-        :m "W" #'cfw:change-view-two-weeks))
-(setq x-super-keysym 'meta)
-
-(setq doom-font (font-spec :family "Iosevka" :size 22))
-;;(setq doom-font (font-spec :family "JetBrainsMono Nerd Font" :size 16))
-(setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "librewolf")
-
-(use-package! org-caldav
-  :init
-  (defun org-caldav-sync-at-close ()
-    (org-caldav-sync)
-    (save-some-buffers))
-  (defvar org-caldav-sync-timer nil
-    "Timer that `org-caldav-push-timer' used to reschedule itself, or nil.")
-  (defun org-caldav-sync-with-delay (secs)
-    (when org-caldav-sync-timer
-      (cancel-timer org-caldav-sync-timer))
-    (setq org-caldav-sync-timer
-	  (run-with-idle-timer
-	   (* 1 secs) nil 'org-caldav-sync)))
-  :after org
-  ;;https://www.reddit.com/r/orgmode/comments/8rl8ep/making_orgcaldav_useable/
-  :config
-  (setq org-caldav-url "https://nextcloud.nucplex.duckdns.org/remote.php/dav/calendars/kavi741"
-        org-caldav-calendar-id "schedule"
-        org-caldav-inbox "~/Notes/schedule.org"
-        org-caldav-files '("~/Notes/000_YR3Winter/YR3Winter.org")
-        org-caldav-sync-changes-to-org 'all
-        ;;org-icalendar-alarm-time 20
-        org-icalendar-use-deadline '(event-if-not-todo todo-due)
-        org-icalendar-use-scheduled '(event-if-not-todo)
-        ;;org-icalendar-include-todo 'all
-        ;;org-caldav-sync-todo t
-        org-icalendar-categories '(local-tags)
-        org-icalendar-timezone "America/Toronto"
-        org-caldav-save-directory "~/Notes/org-caldav/"
-        )
-  ;;for login caching
-  (setq plstore-cache-passphrase-for-symmetric-encryption t)
-  (setq auth-sources '((:source "~/.authinfo" "~/.authinfo.gpg")))
-  ;;auto sync calendar every 10 minutes (600 seconds)
-  (add-hook 'after-save-hook
-            (lambda ()
-              (when (eq major-mode 'org-mode)
-        	(org-caldav-sync-with-delay 600)))))
-;;Add the close emacs hook
-;;(add-hook 'kill-emacs-hook 'org-caldav-sync-at-close))
-(defun my-open-calendar ()
-  (interactive)
-  (cfw:open-calendar-buffer
-   :contents-sources
-   (list
-    (cfw:org-create-source "Green")  ; org-agenda source
-    (cfw:ical-create-source "nextcloud" "https://nextcloud.nucplex.duckdns.org/remote.php/dav/calendars/kavi741/Schedule" "IndianRed")
-    )))
-
-
-(setq calendar-day-name-array  ["Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"])
-(setq calendar-week-start-day 0)
+(map! :nv "t m" #'treemacs-select-directory)
+(map! :leader "t" #'vterm)
+(map! :leader "d"  #'my/insert-definition)
 
 ;; Make movement keys work like they should
 (define-key evil-normal-state-map (kbd "<remap> <evil-next-line>") 'evil-next-visual-line)
@@ -177,6 +75,118 @@
 (define-key evil-motion-state-map (kbd "<remap> <evil-previous-line>") 'evil-previous-visual-line)
                                         ; Make horizontal movement cross lines
 (setq-default evil-cross-lines t)
+
+;; If you use `org' and don't want your org files in the default location below,
+;; change `org-directory'. It must be set before org loads!j
+(defun my/org-add-current-file-to-agenda ()
+  "Add the current file to `org-agenda-files` if it's an Org file."
+  (interactive)
+  (when (and buffer-file-name
+             (string= (file-name-extension buffer-file-name) "org"))
+    (add-to-list 'org-agenda-files (file-truename buffer-file-name))
+    (message "Added %s to org-agenda-files" buffer-file-name)))
+
+(custom-set-variables
+ '(org-directory "~/Notes/"))
+(setq org-agenda-files (append '("~/Notes/roam/")))
+(after! org
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "IN PROGRESS(p)" "|" "DONE(d)" "STUCK(s)" "ABANDONED(a)"))))
+(custom-set-faces!
+  '(org-level-1 :height 1.3 :weight bold :inherit outline-1)
+  '(org-level-2 :height 1.15 :weight bold :inherit outline-2)
+  '(org-level-3 :height 1.1 :weight bold :inherit outline-3)
+  '(org-todo :foreground "#a6da95" :weight bold)
+  '(org-done :foreground "#6e738d" :weight bold)
+  )
+(use-package org-roam
+  :ensure t
+  :init
+  (setq org-roam-v2-ack t)
+  :custom
+  (org-roam-directory "~/Notes/roam/")
+  (org-roam-completion-everwhere t)
+  (org-roam-dailies-capture-templates
+   '(("d" "default" entry "* %<%I:%M %p>: %?"
+      :if-new (file+head "%<%Y-%m-%d>.org" "#+title: %<%Y-%m-%d-W%W>
+* TO-DO Today \n
+* How I'm Feeling \n
+* What I Read Today \n
+* What I Did Today \n
+* Plan For Tomorrow"))
+     ("w" "weekly" entry "* %<%H:%M> %?"
+      :if-new (file+head "%<%Y-W%W>.org" "#+title: %<%Y Week %W>
+* TO-DO \n
+* Monday\n
+* Tuesday\n
+* Wednesday\n
+* Thursday\n
+* Friday\n
+* Saturday\n
+* Sunday\n
+* Next Week\n")
+      :immediate-finish t
+      :unarrowed t)
+     ("n" "note" entry "* %?"
+      :if-new
+      (file+head (lambda ()
+                   (expand-file-name
+                    (concat (read-string "Filename: ") ".org")
+                    default-directory))
+                 (lambda ()
+                   (let ((fname (file-name-base (buffer-file-name))))
+                     (format "#+title: %s\n* General Note\n* Definitions\n* Lesson Questions\n" fname))))))))
+;; maccalfw
+(use-package! calfw-ical :after calfw)
+(use-package! maccalfw :commands maccalfw-open)
+(after! widget
+  (dolist (face '(widget-field
+                  widget-button
+                  ical-form-title-field
+                  ical-form-field-names
+                  ;; add any others you spot
+                  ))
+    (when (facep face)
+      (set-face-attribute face nil :box nil))))
+
+
+;; ESP32
+;;(after! lsp-clangd
+;;  (setq lsp-clients-clangd-args '("--background-index" "--clang-tidy" "--completion-style=detailed"))
+
+;; Rust Analyzer Linked Projects
+;;(setq lsp-rust-analyzer-linked-projects '("~/Projects/square_app/Cargo.toml"))
+
+;; Astro
+;;(use-package! astro-ts-mode
+;;  :init
+;;  (when (modulep! +lsp)
+;;    (add-hook 'astro-ts-mode-hook #'lsp! 'append))
+;;  :mode "\\.astro\\'")
+;;
+;;;;(set-formatter! 'prettier-astro
+;;;;  '("npx" "prettier" "--parser=astro"
+;;;;    (apheleia-formatters-indent "--use-tabs" "--tab-width" 'astro-ts-mode-indent-offset))
+;;;;  :modes '(astro-ts-mode))
+;;
+;;(use-package! lsp-tailwindcss
+;;  :when (modulep! +lsp)
+;;  :init
+;;  (setq! lsp-tailwindcss-add-on-mode t)
+;;  :config
+;;  (add-to-list 'lsp-tailwindcss-major-modes 'astro-ts-mode))
+;;
+;;;; MDX Support
+;;(add-to-list 'auto-mode-alist '("\\.\\(mdx\\)$" . markdown-mode))
+;;(when (modulep! +lsp)
+;;  (add-hook 'markdown-mode-local-vars-hook #'lsp! 'append))
+;;
+;;
+;;(setq treesit-language-source-alist
+;;      '((astro "https://github.com/virchau13/tree-sitter-astro")
+;;        (css "https://github.com/tree-sitter/tree-sitter-css")
+;;        (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")))
+;;(mapc #'treesit-install-language-grammar '(astro css tsx))
 
 ;; Whenever you reconfigure a package, make sure to wrap your config in an
 ;; `after!' block, otherwise Doom's defaults may override your settings. E.g.
